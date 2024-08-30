@@ -50,7 +50,6 @@ async fn run(
 
     loop {
         let packets = device.take_send_queue();
-
         async_iface
             .send_all(&mut iter(packets).map(|p| Ok(p)))
             .await?;

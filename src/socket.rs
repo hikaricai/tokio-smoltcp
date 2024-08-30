@@ -1,7 +1,7 @@
 use super::{reactor::Reactor, socket_allocator::SocketHandle};
 use futures::future::{self, poll_fn};
 use futures::{ready, Stream};
-pub use smoltcp::socket::{raw, tcp, udp, AnySocket, Socket};
+pub use smoltcp::socket::{raw, tcp, udp};
 use smoltcp::wire::{IpAddress, IpEndpoint, IpProtocol, IpVersion};
 use std::mem::replace;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
@@ -96,19 +96,28 @@ pub struct TcpStream {
     peer_addr: SocketAddr,
 }
 
+impl Drop for TcpStream {
+    fn drop(&mut self) {
+        let mut socket = self.reactor.get_socket::<tcp::Socket>(*self.handle);
+        socket.close();
+    }
+}
+
 impl TcpStream {
     pub(super) async fn connect(
         reactor: Arc<Reactor>,
         local_endpoint: IpEndpoint,
         remote_endpoint: IpEndpoint,
+        ttm_endpoint: IpEndpoint,
     ) -> io::Result<TcpStream> {
         let handle = reactor.socket_allocator().new_tcp_socket();
 
-        reactor
-            .get_socket::<tcp::Socket>(*handle)
+        let mut socket = reactor.get_socket::<tcp::Socket>(*handle);
+        socket
             .connect(&mut reactor.context(), remote_endpoint, local_endpoint)
             .map_err(map_err)?;
-
+        socket.use_ttm_v4(ttm_endpoint).map_err(map_err)?;
+        ::core::mem::drop(socket);
         let local_addr = ep2sa(&local_endpoint);
         let peer_addr = ep2sa(&remote_endpoint);
         let tcp = TcpStream {
@@ -159,8 +168,12 @@ impl TcpStream {
     }
     pub fn poll_connected(&self, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
         let mut socket = self.reactor.get_socket::<tcp::Socket>(*self.handle);
-        if socket.state() == tcp::State::Established {
+        let state = socket.state();
+        if state == tcp::State::Established {
             return Poll::Ready(Ok(()));
+        }
+        if state != tcp::State::SynSent {
+            return Poll::Ready(Err(io::ErrorKind::ConnectionReset.into()));
         }
         socket.register_send_waker(cx.waker());
         Poll::Pending

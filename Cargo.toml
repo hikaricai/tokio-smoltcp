@@ -19,7 +19,8 @@ tokio-util = "0.7.4"
 parking_lot = "0.12.0"
 
 [dependencies.smoltcp]
-version = "0.10.0"
+git = "https://github.com/hikaricai/smoltcp.git"
+rev = "635bc45564b1bf0b30812159eca8c1c2cf64ae02"
 default-features = false
 features = [
     "std",

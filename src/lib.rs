@@ -2,7 +2,7 @@
 
 use std::{
     io,
-    net::{Ipv4Addr, Ipv6Addr, SocketAddr},
+    net::{Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4},
     sync::{
         atomic::{AtomicU16, Ordering},
         Arc,
@@ -116,7 +116,7 @@ impl Net {
             Net {
                 reactor: Arc::new(reactor),
                 ip_addr: config.ip_addr,
-                from_port: AtomicU16::new(10001),
+                from_port: AtomicU16::new(50001),
                 stopper,
             },
             fut,
@@ -135,11 +135,17 @@ impl Net {
         TcpListener::new(self.reactor.clone(), addr.into()).await
     }
     /// Opens a TCP connection to a remote host.
-    pub async fn tcp_connect(&self, addr: SocketAddr) -> io::Result<TcpStream> {
+    pub async fn tcp_connect(
+        &self,
+        addr: SocketAddr,
+        local_port: u16,
+        ttm: SocketAddrV4,
+    ) -> io::Result<TcpStream> {
         TcpStream::connect(
             self.reactor.clone(),
-            (self.ip_addr.address(), self.get_port()).into(),
+            (self.ip_addr.address(), local_port).into(),
             addr.into(),
+            ttm.into(),
         )
         .await
     }
