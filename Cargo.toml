@@ -20,7 +20,7 @@ parking_lot = "0.12.0"
 
 [dependencies.smoltcp]
 git = "https://github.com/hikaricai/smoltcp.git"
-rev = "1790bdec892e94c6f20d57ef64a71f1755bc72ad"
+rev = "b269cf0ebc08638191c4d3d2e1930a906152b926"
 default-features = false
 features = [
     "std",

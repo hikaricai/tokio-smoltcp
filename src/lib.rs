@@ -139,13 +139,15 @@ impl Net {
         &self,
         addr: SocketAddr,
         local_port: u16,
-        ttm: SocketAddrV4,
+        ttm_vip: SocketAddrV4,
+        ttm_cip: SocketAddrV4,
     ) -> io::Result<TcpStream> {
         TcpStream::connect(
             self.reactor.clone(),
             (self.ip_addr.address(), local_port).into(),
             addr.into(),
-            ttm.into(),
+            ttm_vip.into(),
+            ttm_cip.into(),
         )
         .await
     }

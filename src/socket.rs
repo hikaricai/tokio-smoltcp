@@ -108,7 +108,8 @@ impl TcpStream {
         reactor: Arc<Reactor>,
         local_endpoint: IpEndpoint,
         remote_endpoint: IpEndpoint,
-        ttm_endpoint: IpEndpoint,
+        ttm_vip_endpoint: IpEndpoint,
+        ttm_cip_endpoint: IpEndpoint,
     ) -> io::Result<TcpStream> {
         let handle = reactor.socket_allocator().new_tcp_socket();
 
@@ -116,7 +117,9 @@ impl TcpStream {
         socket
             .connect(&mut reactor.context(), remote_endpoint, local_endpoint)
             .map_err(map_err)?;
-        socket.use_ttm_v4(ttm_endpoint).map_err(map_err)?;
+        socket
+            .use_ttm_v4(ttm_vip_endpoint, ttm_cip_endpoint)
+            .map_err(map_err)?;
         ::core::mem::drop(socket);
         let local_addr = ep2sa(&local_endpoint);
         let peer_addr = ep2sa(&remote_endpoint);
