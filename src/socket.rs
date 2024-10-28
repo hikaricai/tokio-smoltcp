@@ -239,7 +239,7 @@ impl AsyncWrite for TcpStream {
             socket.close();
             self.reactor.notify();
         }
-        if socket.state() == tcp::State::Closed {
+        if !socket.is_active() {
             return Poll::Ready(Ok(()));
         }
 
